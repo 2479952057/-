@@ -3,31 +3,61 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer">
 <title>员工工作日志 - AI智能评分系统</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui}
-body{background:#f7f8fa}
-.container{max-width:1000px;margin:20px auto;padding:0 20px}
-.header{background:#1677ff;color:white;padding:18px 20px;border-radius:14px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif}
+body{background:#f7f8fa;min-height:100vh}
+.container{max-width:1000px;margin:0 auto;padding:20px}
+.header{background:#1677ff;color:white;padding:20px 24px;border-radius:14px;box-shadow:0 4px 12px rgba(22, 119, 255, 0.15)}
+.header h1{font-size:22px;font-weight:600}
 .main{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:20px 0}
-.card{background:white;padding:22px;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,0.05)}
-.card h2{margin-bottom:16px;color:#1677ff}
-.form-item{margin-bottom:14px}
-label{display:block;margin-bottom:6px}
-input,textarea{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px}
-textarea{min-height:100px;resize:vertical}
-.btn{width:100%;padding:12px;background:#1677ff;color:white;border:none;border-radius:10px;margin-top:10px;font-weight:bold;cursor:pointer;transition:background 0.2s}
-.btn:disabled{background:#999;cursor:not-allowed}
+.card{background:white;padding:24px;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,0.05)}
+.card h2{margin-bottom:18px;color:#1677ff;font-size:18px;font-weight:600;display:flex;align-items:center;gap:6px}
+.form-item{margin-bottom:16px}
+label{display:block;margin-bottom:8px;color:#333;font-size:14px;font-weight:500}
+input,textarea{width:100%;padding:12px;border:1px solid #d9d9d9;border-radius:8px;font-size:14px;transition:border-color 0.2s, box-shadow 0.2s}
+input:focus,textarea:focus{outline:none;border-color:#1677ff;box-shadow:0 0 0 2px rgba(22, 119, 255, 0.1)}
+textarea{min-height:100px;resize:vertical;line-height:1.5}
+.btn{width:100%;padding:14px;background:#1677ff;color:white;border:none;border-radius:10px;margin-top:10px;font-weight:600;font-size:16px;cursor:pointer;transition:background 0.2s, transform 0.1s}
+.btn:disabled{background:#999;cursor:not-allowed;transform:none}
 .btn:hover:not(:disabled){background:#0d5bcd}
-.score-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0}
-.radar{height:280px;margin:16px 0}
-.rank-item{display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #f2f2f2}
-.rank-item:first-child{font-weight:bold;color:#1677ff}
-.tips{color:#999;font-size:12px;margin-top:10px;text-align:center}
-.status-tip{text-align:center;margin-top:8px;font-size:13px;color:#1677ff}
-.key-input{background:#f0f7ff;border:1px solid #1677ff;margin-bottom:16px}
+.btn:active:not(:disabled){transform:scale(0.98)}
+.score-item{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:14px}
+.score-item:last-child{border-bottom:none}
+.score-item b{color:#1677ff;font-size:15px}
+.radar{height:280px;margin:20px 0;width:100%}
+.rank-item{display:flex;justify-content:space-between;padding:12px 10px;border-bottom:1px solid #f5f5f5;font-size:14px}
+.rank-item:last-child{border-bottom:none}
+.rank-item:first-child{font-weight:600;color:#1677ff;background:#f0f7ff;border-radius:6px}
+.tips{color:#999;font-size:12px;margin-top:12px;text-align:center;line-height:1.4}
+.status-tip{text-align:center;margin-top:10px;font-size:13px;color:#1677ff;font-weight:500}
+.key-input{background:#f0f7ff;border:1px solid #1677ff}
+.total-box{text-align:center;margin:24px 0;padding:20px;background:#f6ffed;border:1px solid #b7eb8f;border-radius:12px}
+.total-box .total-num{font-size:48px;font-weight:700;color:#00b42a;line-height:1}
+.total-box .total-desc{margin-top:8px;color:#666;font-size:14px}
+#comment{margin-top:16px;line-height:1.6;color:#333;font-size:14px;padding:14px;background:#f8f9fa;border-radius:8px}
+/* 移动端全适配 */
+@media (max-width: 768px) {
+  .main{grid-template-columns:1fr}
+  .radar{height:240px}
+  .header h1{font-size:18px}
+  .total-box .total-num{font-size:40px}
+  .container{padding:12px}
+  .card{padding:18px}
+}
+/* 加载动画 */
+.loading{display:inline-block;width:14px;height:14px;border:2px solid #fff;border-radius:50%;border-top-color:transparent;animation:spin 0.8s linear infinite;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
+<!-- 主CDN+备用CDN，确保图表库100%加载成功 -->
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script>
+// 备用CDN加载容错
+if(typeof echarts === 'undefined'){
+  document.write('<script src="https://lib.baomitu.com/echarts/5.4.3/echarts.min.js"><\/script>');
+}
+</script>
 </head>
 <body>
 <div class="container">
@@ -37,25 +67,40 @@ textarea{min-height:100px;resize:vertical}
   <div class="main">
     <div class="card">
       <h2>📝 工作日志</h2>
-      <!-- 密钥输入框，代码里不存密钥，只有你自己手动输入 -->
+      <!-- 密钥输入框：密码模式、会话级临时存储、永不永久保存 -->
       <div class="form-item">
-        <label>Gemini API密钥（仅本地使用，不上传、不保存）</label>
-        <input id="apiKey" type="password" class="key-input" placeholder="请输入你自己的Gemini API密钥">
+        <label>Gemini API密钥（仅本地内存使用，关闭页面自动清空）</label>
+        <input id="apiKey" type="password" class="key-input" placeholder="请输入你自己的Gemini API密钥" autocomplete="off">
       </div>
-      <div class="form-item"><label>姓名</label><input id="name" placeholder="请输入姓名"></div>
-      <div class="form-item"><label>今日完成工作</label><textarea id="done" placeholder="请详细填写今日完成的工作内容"></textarea></div>
-      <div class="form-item"><label>未完成工作</label><textarea id="undone" placeholder="请填写未完成的工作及原因"></textarea></div>
-      <div class="form-item"><label>遇到的问题与解决方案</label><textarea id="problem" placeholder="请填写遇到的问题及对应的解决办法"></textarea></div>
-      <div class="form-item"><label>明日工作计划</label><textarea id="plan" placeholder="请填写明日的工作安排与计划"></textarea></div>
+      <div class="form-item">
+        <label>姓名</label>
+        <input id="name" placeholder="请输入姓名" autocomplete="off">
+      </div>
+      <div class="form-item">
+        <label>今日完成工作</label>
+        <textarea id="done" placeholder="请详细填写今日完成的工作内容"></textarea>
+      </div>
+      <div class="form-item">
+        <label>未完成工作</label>
+        <textarea id="undone" placeholder="请填写未完成的工作及原因"></textarea>
+      </div>
+      <div class="form-item">
+        <label>遇到的问题与解决方案</label>
+        <textarea id="problem" placeholder="请填写遇到的问题及对应的解决办法"></textarea>
+      </div>
+      <div class="form-item">
+        <label>明日工作计划</label>
+        <textarea id="plan" placeholder="请填写明日的工作安排与计划"></textarea>
+      </div>
       <button class="btn" onclick="submitAI()" id="btn">🚀 AI智能评分</button>
-      <div class="tips">接入Google Gemini官方API，纯AI真实评分，密钥仅本地使用，永不泄露</div>
+      <div class="tips">接入Google Gemini官方原生API，纯AI真实评分，无本地兜底、无随机数、无造假逻辑</div>
       <div id="statusTip" class="status-tip"></div>
     </div>
     <div class="card">
       <h2>📊 AI评分结果</h2>
-      <div style="text-align:center;margin:20px 0">
-        <div style="font-size:42px;font-weight:bold;color:#00b42a" id="total">0.00</div>
-        <div>总分（0~4.0）</div>
+      <div class="total-box">
+        <div class="total-num" id="total">0.00</div>
+        <div class="total-desc">总分（0.5~4.0）</div>
       </div>
       <div class="score-item">工作完成度 <b id="s1">0.0</b></div>
       <div class="score-item">效率与执行力 <b id="s2">0.0</b></div>
@@ -63,7 +108,7 @@ textarea{min-height:100px;resize:vertical}
       <div class="score-item">协作与沟通 <b id="s4">0.0</b></div>
       <div class="score-item">改进与成长 <b id="s5">0.0</b></div>
       <div id="radar" class="radar"></div>
-      <p id="comment" style="margin-top:10px;line-height:1.6;color:#333"></p>
+      <p id="comment">请填写工作日志并点击「AI智能评分」，即可获取AI专业评分与评语</p>
     </div>
   </div>
   <div class="card">
@@ -73,30 +118,127 @@ textarea{min-height:100px;resize:vertical}
 </div>
 
 <script>
-// 全局变量，代码里彻底不写死密钥
+// ===================== 全局配置（无需修改）=====================
 let chart;
-let records = JSON.parse(localStorage.getItem('workScoreRecords')) || [];
+let records = [];
+const API_TIMEOUT = 15000; // 15秒超时控制
+const STORAGE_KEY = 'workScoreRecords';
+const SESSION_KEY = 'temp_gemini_key';
+const MAX_SCORE_PER_DIM = 0.8;
+const MIN_SCORE_PER_DIM = 0.1;
+const MAX_TOTAL_SCORE = 4.0;
+const MIN_TOTAL_SCORE = 0.5;
 
-// 页面加载初始化
-window.onload = () => {
-  chart = echarts.init(document.getElementById('radar'));
-  updateRadarChart([0, 0, 0, 0, 0]);
-  renderRank();
-  window.addEventListener('resize', () => chart.resize());
-};
+// ===================== 工具函数（全容错）=====================
+// 本地存储可用性检测
+function isStorageAvailable() {
+  try {
+    const testKey = '__storage_test__';
+    localStorage.setItem(testKey, testKey);
+    localStorage.removeItem(testKey);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
 
-// 更新雷达图
+// 会话存储可用性检测
+function isSessionStorageAvailable() {
+  try {
+    const testKey = '__session_test__';
+    sessionStorage.setItem(testKey, testKey);
+    sessionStorage.removeItem(testKey);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// HTML转义，防止XSS攻击
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>"']/g, char => {
+    const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    return entities[char];
+  });
+}
+
+// 从本地存储读取记录
+function loadRecordsFromStorage() {
+  if (!isStorageAvailable()) return [];
+  try {
+    const storageData = localStorage.getItem(STORAGE_KEY);
+    if (!storageData) return [];
+    const parsedData = JSON.parse(storageData);
+    return Array.isArray(parsedData) ? parsedData : [];
+  } catch (e) {
+    console.warn('本地存储数据解析失败，已自动重置', e);
+    return [];
+  }
+}
+
+// 保存记录到本地存储
+function saveRecordsToStorage(data) {
+  if (!isStorageAvailable()) return false;
+  try {
+    // 容量检测，防止存储溢出
+    const dataStr = JSON.stringify(data);
+    if (new Blob([dataStr]).size > 4 * 1024 * 1024) {
+      console.warn('存储数据超出容量限制，已清理早期记录');
+      data = data.slice(-50); // 仅保留最近50条记录
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    return true;
+  } catch (e) {
+    console.warn('本地存储保存失败', e);
+    return false;
+  }
+}
+
+// 会话级密钥临时保存（关闭页面自动清空）
+function saveTempKey(key) {
+  if (!isSessionStorageAvailable()) return;
+  try {
+    sessionStorage.setItem(SESSION_KEY, key);
+  } catch (e) {
+    console.warn('会话密钥保存失败', e);
+  }
+}
+
+// 读取临时密钥
+function getTempKey() {
+  if (!isSessionStorageAvailable()) return '';
+  try {
+    return sessionStorage.getItem(SESSION_KEY) || '';
+  } catch (e) {
+    return '';
+  }
+}
+
+// ===================== 核心渲染函数 =====================
+// 雷达图初始化&更新
 function updateRadarChart(data) {
+  if (!chart) return;
   chart.setOption({
     radar: {
       indicator: [
-        { name: '工作完成度', max: 0.8 },
-        { name: '效率与执行力', max: 0.8 },
-        { name: '责任心与态度', max: 0.8 },
-        { name: '协作与沟通', max: 0.8 },
-        { name: '改进与成长', max: 0.8 }
+        { name: '工作完成度', max: MAX_SCORE_PER_DIM },
+        { name: '效率与执行力', max: MAX_SCORE_PER_DIM },
+        { name: '责任心与态度', max: MAX_SCORE_PER_DIM },
+        { name: '协作与沟通', max: MAX_SCORE_PER_DIM },
+        { name: '改进与成长', max: MAX_SCORE_PER_DIM }
       ],
-      splitNumber: 4
+      splitNumber: 4,
+      shape: 'polygon',
+      name: {
+        fontSize: 12,
+        color: '#333'
+      },
+      splitArea: {
+        areaStyle: {
+          color: ['rgba(22, 119, 255, 0.02)', 'rgba(22, 119, 255, 0.05)', 'rgba(22, 119, 255, 0.08)', 'rgba(22, 119, 255, 0.12)']
+        }
+      }
     },
     series: [{
       type: 'radar',
@@ -104,16 +246,74 @@ function updateRadarChart(data) {
         value: data,
         name: '评分维度',
         itemStyle: { color: '#1677ff' },
-        areaStyle: { color: 'rgba(22, 119, 255, 0.2)' }
+        lineStyle: { width: 2 },
+        areaStyle: { color: 'rgba(22, 119, 255, 0.25)' }
       }]
     }]
   }, true);
 }
 
-// 核心纯AI评分逻辑（无任何兜底、无本地生成分数代码）
+// 排名渲染
+function renderRank() {
+  const rankList = document.getElementById('rankList');
+  if (records.length === 0) {
+    rankList.innerHTML = "暂无评分记录";
+    return;
+  }
+  // 按总分降序排序，无效分数按0处理
+  const sortedRecords = [...records].sort((a, b) => {
+    const scoreA = parseFloat(a.total) || 0;
+    const scoreB = parseFloat(b.total) || 0;
+    return scoreB - scoreA;
+  });
+  // 渲染排名，XSS防护
+  rankList.innerHTML = sortedRecords.map((item, index) => `
+    <div class="rank-item">
+      <span>${index + 1}. ${escapeHtml(item.name)}</span>
+      <span>${escapeHtml(item.total)} 分</span>
+    </div>
+  `).join('');
+}
+
+// 评分结果渲染（仅AI返回有效数据时执行）
+function showScoreResult(data) {
+  // 填充分数，XSS防护
+  document.getElementById('s1').innerText = data.score1;
+  document.getElementById('s2').innerText = data.score2;
+  document.getElementById('s3').innerText = data.score3;
+  document.getElementById('s4').innerText = data.score4;
+  document.getElementById('s5').innerText = data.score5;
+  document.getElementById('total').innerText = data.total;
+  document.getElementById('comment').innerText = data.comment;
+
+  // 更新雷达图
+  updateRadarChart([
+    parseFloat(data.score1),
+    parseFloat(data.score2),
+    parseFloat(data.score3),
+    parseFloat(data.score4),
+    parseFloat(data.score5)
+  ]);
+
+  // 新增记录
+  const newRecord = {
+    name: document.getElementById('name').value.trim(),
+    total: data.total,
+    time: new Date().toLocaleString()
+  };
+  records.push(newRecord);
+
+  // 保存到本地存储
+  saveRecordsToStorage(records);
+
+  // 更新排名
+  renderRank();
+}
+
+// ===================== 核心AI评分逻辑（纯官方API，无任何兜底）=====================
 async function submitAI() {
-  // 获取表单内容和手动输入的密钥
-  const apiKey = document.getElementById('apiKey').value.trim();
+  // 获取表单内容
+  let apiKey = document.getElementById('apiKey').value.trim();
   const name = document.getElementById('name').value.trim();
   const done = document.getElementById('done').value.trim();
   const undone = document.getElementById('undone').value.trim();
@@ -122,47 +322,225 @@ async function submitAI() {
   const btn = document.getElementById('btn');
   const statusTip = document.getElementById('statusTip');
 
-  // 基础校验
+  // 严格表单校验
   if (!apiKey) {
-    alert('请输入你的Gemini API密钥');
-    return;
+    // 尝试读取临时密钥
+    apiKey = getTempKey();
+    if (!apiKey) {
+      alert('请输入你的Gemini API密钥');
+      document.getElementById('apiKey').focus();
+      return;
+    }
+    document.getElementById('apiKey').value = apiKey;
   }
   if (!name) {
     alert('请填写姓名');
+    document.getElementById('name').focus();
     return;
   }
   if (!done) {
     alert('请填写今日完成工作内容');
+    document.getElementById('done').focus();
     return;
   }
 
-  // 动态拼接官方API地址，密钥仅在本地内存中使用
-  const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+  // 临时保存密钥，当前会话不用重复输入
+  saveTempKey(apiKey);
 
-  // 按钮禁用，防止重复提交
+  // 拼接官方API地址
+  const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+  // 超时控制器
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
+
+  // 按钮状态锁定，防止重复提交
   btn.disabled = true;
-  btn.innerText = "AI评分中…";
-  statusTip.innerText = "正在调用Gemini官方API评分…";
+  btn.innerHTML = '<span class="loading"></span>AI评分中…';
+  statusTip.innerText = "正在调用Gemini官方API，请勿重复点击…";
 
   try {
-    // 给AI的精准prompt，严格要求返回固定格式JSON
+    // 极致约束的prompt，100%确保返回纯JSON，无任何多余内容
     const prompt = `
-你是专业的员工工作表现评分助手，必须严格遵守以下所有规则，只返回纯JSON格式数据，不能有任何其他内容、解释、markdown格式、多余符号、换行。
-评分规则：
-1.  从5个维度评分，每个维度分数范围0.1-0.8，保留1位小数
-    - score1：工作完成度，根据今日完成工作的完整性、落地性、工作量评分
-    - score2：效率与执行力，根据工作完成的效率、闭环情况、推进进度评分
-    - score3：责任心与态度，根据工作态度、未完成工作的正视程度、负责程度评分
-    - score4：协作与沟通，根据工作中的协同对接、问题沟通、跨方配合情况评分
-    - score5：改进与成长，根据工作复盘、问题解决、明日计划的合理性、成长性评分
-2.  total：总分，必须是5个维度分数的总和，保留2位小数，范围0.5-4.0
-3.  comment：评语，根据整体工作情况，写一段50-150字的专业、中肯的工作评语
-4.  必须严格根据用户提交的工作日志内容评分，绝对不能随机，工作内容越完整、落地性越强、态度越端正，分数越高
-用户提交的工作日志内容：
+# 角色
+你是专业、严谨的企业员工工作表现评分助手，只输出纯JSON格式数据，绝对不能输出任何其他内容、解释、markdown格式、代码块、注释、换行、多余符号。
+
+# 评分规则（必须100%严格遵守）
+1.  评分维度：共5个维度，每个维度分数必须严格在${MIN_SCORE_PER_DIM}-${MAX_SCORE_PER_DIM}之间，保留1位小数
+    - score1：工作完成度，仅根据今日完成工作的落地性、完整性、实际交付结果评分，不看字数，空话套话、流水账必须扣分
+    - score2：效率与执行力，仅根据工作推进进度、交付闭环、任务完成效率评分
+    - score3：责任心与态度，仅根据工作态度、未完成工作的正视程度、责任意识、问题应对态度评分
+    - score4：协作与沟通，仅根据工作中的协同对接、跨方配合、问题沟通的有效内容评分
+    - score5：改进与成长，仅根据工作复盘、问题解决方案、明日计划的合理性、落地性、成长性评分
+2.  total：总分，必须是5个维度分数的精确算术总和，保留2位小数，必须严格在${MIN_TOTAL_SCORE}-${MAX_TOTAL_SCORE}之间
+3.  comment：评语，根据整体工作情况，写一段50-150字的专业、中肯、客观的工作评语，不能有极端表述
+4.  核心要求：必须严格根据用户提交的工作日志内容评分，绝对不能随机生成，工作内容越有价值、落地性越强、态度越端正，分数越高；凑字数、无意义重复、空话套话必须扣分
+5.  格式要求：必须输出纯JSON，不能有任何其他内容，键名必须严格和示例一致，字符串必须用双引号包裹
+
+# 用户提交的工作日志内容
 姓名：${name}
 今日完成工作：${done}
 未完成工作：${undone}
 遇到的问题与解决方案：${problem}
 明日工作计划：${plan}
-返回格式必须严格是纯JSON，示例如下：
-{"score1":"0.6","score2":"0.6","score3":"0.6","score4":"0.6","score5":"0.6","total":"3.00","comment":"工作完成情况良好，执行力达标，态度端正，有完整的工作...
+
+# 输出示例（必须严格遵循此格式）
+{"score1":"0.6","score2":"0.6","score3":"0.6","score4":"0.6","score5":"0.6","total":"3.00","comment":"工作完成情况良好，执行力达标，态度端正，有完整的工作规划，整体表现合格。"}
+    `;
+
+    // 调用官方API，无任何中间环节
+    const response = await fetch(GEMINI_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.05, // 极致低随机性，确保同样内容结果一致
+          responseMimeType: "application/json",
+          topP: 0.8,
+          topK: 10,
+          maxOutputTokens: 1024
+        },
+        safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+        ]
+      }),
+      signal: controller.signal
+    });
+
+    // 接口调用失败，精准报错，无任何兜底
+    if (!response.ok) {
+      switch (response.status) {
+        case 400:
+        case 403:
+          throw new Error("API密钥无效，请检查密钥是否正确、是否在Google AI Studio开启了Gemini API权限");
+        case 429:
+          throw new Error("API调用次数超限，Google免费额度每日刷新，请稍后重试");
+        case 500:
+        case 503:
+          throw new Error("Gemini官方服务器繁忙，请稍后重试");
+        default:
+          throw new Error(`API调用失败，状态码：${response.status}，请检查网络环境与密钥权限`);
+      }
+    }
+
+    // 解析AI返回数据
+    const result = await response.json();
+    statusTip.innerText = "正在解析AI评分结果…";
+
+    // 校验AI返回内容有效性
+    if (!result.candidates || result.candidates.length === 0) {
+      if (result.promptFeedback && result.promptFeedback.blockReason) {
+        throw new Error("内容被AI安全系统拦截，请修改工作日志内容后重试");
+      }
+      throw new Error("AI未返回有效内容，请重试");
+    }
+    if (!result.candidates[0].content || !result.candidates[0].content.parts || result.candidates[0].content.parts.length === 0) {
+      throw new Error("AI返回内容无效，请重试");
+    }
+
+    // 提取纯JSON内容，兼容所有可能的格式异常
+    let aiResponseText = result.candidates[0].content.parts[0].text.trim();
+    const jsonMatch = aiResponseText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("AI返回格式异常，未识别到有效评分数据，请重试");
+    }
+    aiResponseText = jsonMatch[0];
+
+    // 解析JSON，单独容错
+    let scoreData;
+    try {
+      scoreData = JSON.parse(aiResponseText);
+    } catch (e) {
+      throw new Error("AI返回数据解析失败，请重试");
+    }
+
+    // 严格校验返回数据完整性
+    const requiredFields = ['score1', 'score2', 'score3', 'score4', 'score5', 'total', 'comment'];
+    const hasAllFields = requiredFields.every(field => scoreData[field] !== undefined && scoreData[field] !== '');
+    if (!hasAllFields) {
+      throw new Error("AI返回数据不完整，缺少必填评分项，请重试");
+    }
+
+    // 分数范围强制校验，确保100%符合规则，防止渲染异常
+    const scoreFields = ['score1', 'score2', 'score3', 'score4', 'score5'];
+    scoreFields.forEach(field => {
+      let score = parseFloat(scoreData[field]);
+      score = Math.max(MIN_SCORE_PER_DIM, Math.min(MAX_SCORE_PER_DIM, score));
+      scoreData[field] = score.toFixed(1);
+    });
+    // 重新计算精确总分，彻底杜绝AI计算错误
+    scoreData.total = scoreFields.reduce((sum, field) => sum + parseFloat(scoreData[field]), 0).toFixed(2);
+
+    // 所有校验通过，渲染结果
+    showScoreResult(scoreData);
+    statusTip.innerText = "✅ Gemini官方AI真实评分完成，结果已生效";
+
+  } catch (error) {
+    // 所有异常仅精准报错，不生成任何分数，不修改页面数据
+    if (error.name === 'AbortError') {
+      alert("AI评分失败：请求超时，请检查网络环境后重试");
+      statusTip.innerText = "❌ 请求超时，请检查网络后重试";
+    } else {
+      alert(`AI评分失败：${error.message}`);
+      statusTip.innerText = "❌ AI评分失败，请根据提示修正后重试";
+    }
+  } finally {
+    // 清除超时定时器
+    clearTimeout(timeoutId);
+    // 恢复按钮状态，无论成功失败都会执行
+    btn.disabled = false;
+    btn.innerText = "🚀 AI智能评分";
+  }
+}
+
+// ===================== 页面初始化 =====================
+window.onload = () => {
+  // 校验echarts是否加载成功
+  if (typeof echarts === 'undefined') {
+    const statusTip = document.getElementById('statusTip');
+    if (statusTip) statusTip.innerText = "❌ 图表库加载失败，请检查网络后刷新页面";
+    alert("图表库加载失败，请检查网络环境后刷新页面");
+    return;
+  }
+
+  // 加载本地存储的记录
+  records = loadRecordsFromStorage();
+
+  // 初始化雷达图
+  chart = echarts.init(document.getElementById('radar'));
+  updateRadarChart([0, 0, 0, 0, 0]);
+
+  // 初始化排名
+  renderRank();
+
+  // 读取临时密钥，不用重复输入
+  const tempKey = getTempKey();
+  if (tempKey) {
+    document.getElementById('apiKey').value = tempKey;
+  }
+
+  // 窗口大小变化，雷达图自适应
+  window.addEventListener('resize', () => {
+    if (chart) chart.resize();
+  });
+
+  // 页面卸载，销毁雷达图，防止内存泄漏
+  window.addEventListener('beforeunload', () => {
+    if (chart) chart.dispose();
+  });
+
+  // 回车提交优化
+  document.querySelectorAll('input, textarea').forEach(item => {
+    item.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.ctrlKey) {
+        submitAI();
+      }
+    });
+  });
+};
+</script>
+</body>
+</html>
