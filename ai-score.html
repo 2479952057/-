@@ -76,11 +76,17 @@ window.onload = () => {
   
   // 渲染历史排名
   renderRank();
+  
+  // 监听窗口大小变化，防止雷达图消失
+  window.addEventListener('resize', () => {
+    if (chart) chart.resize();
+  });
 };
 
 // 更新雷达图
 function updateRadarChart(data) {
   const option = {
+    tooltip: {},
     radar: {
       indicator: [
         {name:'工作完成度',max:0.8},
@@ -92,7 +98,13 @@ function updateRadarChart(data) {
     },
     series: [{
       type: 'radar',
-      data: [{ value: data }]
+      data: [{
+        value: data,
+        name: '能力维度评分',
+        areaStyle: {
+          color: 'rgba(22, 119, 255, 0.3)'
+        }
+      }]
     }]
   };
   chart.setOption(option);
@@ -111,85 +123,4 @@ async function submitAI(){
     const logContent = `
       姓名：${name}
       今日完成：${done}
-      未完成工作：${document.getElementById('undone').value || '无'}
-      问题与解决方案：${document.getElementById('problem').value || '无'}
-      明日工作计划：${document.getElementById('plan').value || '无'}
-    `;
-    const prompt = `
-      你是专业的员工绩效评分专家，按0~0.8分（单维度满分0.8，总分4.0）对以下工作日志评分，
-      维度：工作完成度、效率与执行力、责任心与态度、协作与沟通、改进与成长，
-      同时生成50字左右的评语，严格按JSON格式返回，无任何额外文字，JSON字段：
-      score1(工作完成度),score2(效率与执行力),score3(责任心与态度),score4(协作与沟通),score5(改进与成长),total(总分,保留2位小数),comment(评语)
-      工作日志：${logContent}
-    `;
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text().replace(/```|json/g, '').trim();
-    const data = JSON.parse(text);
-    
-    showResult(data);
-  } catch (e) {
-    console.error(e);
-    alert("AI评分成功（兜底机制），已为你生成合理评分");
-    showResult({
-      score1:(Math.random()*0.4+0.4).toFixed(1),
-      score2:(Math.random()*0.4+0.4).toFixed(1),
-      score3:(Math.random()*0.4+0.4).toFixed(1),
-      score4:(Math.random()*0.4+0.4).toFixed(1),
-      score5:(Math.random()*0.4+0.4).toFixed(1),
-      total:(Math.random()*2+2).toFixed(2),
-      comment:"工作完成情况良好，计划清晰，需继续保持执行力，优化问题解决效率。"
-    });
-  } finally {
-    btn.disabled = false;
-    btn.innerText = "🚀 真AI智能评分";
-  }
-}
-
-// 展示评分结果
-function showResult(data){
-  document.getElementById('s1').innerText = data.score1;
-  document.getElementById('s2').innerText = data.score2;
-  document.getElementById('s3').innerText = data.score3;
-  document.getElementById('s4').innerText = data.score4;
-  document.getElementById('s5').innerText = data.score5;
-  document.getElementById('total').innerText = data.total;
-  document.getElementById('comment').innerText = data.comment;
-  
-  // 更新雷达图
-  updateRadarChart([
-    parseFloat(data.score1),
-    parseFloat(data.score2),
-    parseFloat(data.score3),
-    parseFloat(data.score4),
-    parseFloat(data.score5)
-  ]);
-  
-  // 新增排名记录并保存到本地
-  records.push({
-    name: document.getElementById('name').value.trim(),
-    total: data.total,
-    ...data
-  });
-  localStorage.setItem('workRecords', JSON.stringify(records));
-  renderRank();
-}
-
-// 渲染排名列表
-function renderRank(){
-  const list = document.getElementById('rankList');
-  if(records.length === 0){
-    list.innerHTML = "暂无记录";
-    return;
-  }
-  const sorted = [...records].sort((a,b)=>b.total - a.total);
-  list.innerHTML = sorted.map((item, index) => `
-    <div class="rank-item">
-      <span>${index + 1}. ${item.name}</span>
-      <span>${item.total}</span>
-    </div>
-  `).join('');
-}
-</script>
-</body>
-</html>
+      未完成工作：${document...
