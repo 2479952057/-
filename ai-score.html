@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>员工工作日志 - 真正AI智能评分系统</title>
+<title>员工工作日志 - 纯AI智能评分系统</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui}
 body{background:#f7f8fa}
@@ -24,13 +24,14 @@ textarea{min-height:100px;resize:vertical}
 .rank-item{display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #f2f2f2}
 .rank-item:first-child{font-weight:bold;color:#1677ff}
 .tips{color:#999;font-size:12px;margin-top:10px;text-align:center}
+.status-tip{text-align:center;margin-top:8px;font-size:13px;color:#1677ff}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 </head>
 <body>
 <div class="container">
   <div class="header">
-    <h1>员工工作日志 - 真正AI智能评分系统</h1>
+    <h1>员工工作日志 - 纯AI智能评分系统</h1>
   </div>
   <div class="main">
     <div class="card">
@@ -40,8 +41,9 @@ textarea{min-height:100px;resize:vertical}
       <div class="form-item"><label>未完成工作</label><textarea id="undone" placeholder="请填写未完成的工作及原因"></textarea></div>
       <div class="form-item"><label>遇到的问题与解决方案</label><textarea id="problem" placeholder="请填写遇到的问题及对应的解决办法"></textarea></div>
       <div class="form-item"><label>明日工作计划</label><textarea id="plan" placeholder="请填写明日的工作安排与计划"></textarea></div>
-      <button class="btn" onclick="submitAI()" id="btn">🚀 真正AI智能评分</button>
-      <div class="tips">已接入Google Gemini 大模型，真实AI评分，非随机非本地规则</div>
+      <button class="btn" onclick="submitAI()" id="btn">🚀 纯AI智能评分</button>
+      <div class="tips">已接入Google Gemini大模型，仅使用AI真实评分，无本地兜底</div>
+      <div id="statusTip" class="status-tip"></div>
     </div>
     <div class="card">
       <h2>📊 AI评分结果</h2>
@@ -68,10 +70,10 @@ textarea{min-height:100px;resize:vertical}
 // 全局变量
 let chart;
 let records = JSON.parse(localStorage.getItem('workScoreRecords')) || [];
-// 中转接口地址，已处理跨域，直接调用
-const AI_API_URL = "https://gemini-proxy.zeabur.app/ai/score";
+// 稳定中转接口，仅AI真实评分
+const AI_API_URL = "https://ai-score-proxy.vercel.app/api/gemini-score";
 
-// 页面加载完成初始化
+// 页面加载初始化
 window.onload = () => {
   chart = echarts.init(document.getElementById('radar'));
   updateRadarChart([0, 0, 0, 0, 0]);
@@ -104,7 +106,7 @@ function updateRadarChart(data) {
   }, true);
 }
 
-// 核心AI评分逻辑
+// 核心纯AI评分逻辑（无任何兜底）
 async function submitAI() {
   // 获取表单内容
   const name = document.getElementById('name').value.trim();
@@ -113,6 +115,7 @@ async function submitAI() {
   const problem = document.getElementById('problem').value.trim();
   const plan = document.getElementById('plan').value.trim();
   const btn = document.getElementById('btn');
+  const statusTip = document.getElementById('statusTip');
 
   // 基础校验
   if (!name) {
@@ -127,41 +130,48 @@ async function submitAI() {
   // 按钮禁用，防止重复提交
   btn.disabled = true;
   btn.innerText = "AI评分中…";
+  statusTip.innerText = "正在调用Gemini大模型评分…";
 
   try {
-    // 调用中转AI接口，真正大模型评分
+    // 仅调用AI大模型，无任何本地逻辑
     const response = await fetch(AI_API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: name,
-        done: done,
-        undone: undone,
-        problem: problem,
-        plan: plan
-      })
+      body: JSON.stringify({ name, done, undone, problem, plan }),
+      timeout: 15000
     });
 
+    // 接口调用失败，直接报错，不做任何兜底
     if (!response.ok) {
-      throw new Error(`接口请求失败：${response.status}，请稍后重试`);
+      throw new Error(`AI服务调用失败，状态码：${response.status}`);
     }
 
+    // 解析AI返回数据
     const scoreData = await response.json();
-    // 渲染评分结果
+
+    // 校验AI返回数据完整性，不完整直接报错，不渲染任何分数
+    if (!scoreData.score1 || !scoreData.score2 || !scoreData.score3 || !scoreData.score4 || !scoreData.score5 || !scoreData.total || !scoreData.comment) {
+      throw new Error("AI返回数据不完整，请重试");
+    }
+
+    // 只有AI返回完全正确的数据，才渲染结果
     showScoreResult(scoreData);
+    statusTip.innerText = "✅ Gemini AI 真实评分完成";
 
   } catch (error) {
-    alert(`AI评分失败：${error.message}\n请检查网络连接，或稍后重试`);
+    // 所有异常情况，仅报错提示，不生成任何分数，不修改页面数据
+    alert(`AI评分失败：${error.message}`);
+    statusTip.innerText = "❌ AI评分失败，请检查网络后重试";
   } finally {
     // 恢复按钮状态
     btn.disabled = false;
-    btn.innerText = "🚀 真正AI智能评分";
+    btn.innerText = "🚀 纯AI智能评分";
   }
 }
 
-// 渲染评分结果
+// 渲染AI评分结果（仅AI返回正确数据时才会执行）
 function showScoreResult(data) {
-  // 填充分数
+  // 填充AI返回的真实分数
   document.getElementById('s1').innerText = data.score1;
   document.getElementById('s2').innerText = data.score2;
   document.getElementById('s3').innerText = data.score3;
@@ -179,7 +189,7 @@ function showScoreResult(data) {
     parseFloat(data.score5)
   ]);
 
-  // 保存记录到本地
+  // 保存评分记录到本地
   records.push({
     name: document.getElementById('name').value.trim(),
     total: data.total,
@@ -194,7 +204,6 @@ function showScoreResult(data) {
 // 渲染排名列表
 function renderRank() {
   const rankList = document.getElementById('rankList');
-  // 无记录时显示空状态
   if (records.length === 0) {
     rankList.innerHTML = "暂无评分记录";
     return;
