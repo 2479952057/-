@@ -22,7 +22,6 @@ textarea{min-height:100px}
 .radar{height:280px;margin:16px 0}
 .rank-item{display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #f2f2f2}
 </style>
-<!-- 引入ECharts（雷达图）+ Gemini SDK -->
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@google/generative-ai@0.17.1/dist/index.umd.js"></script>
 </head>
@@ -64,25 +63,39 @@ textarea{min-height:100px}
 
 <script>
 let chart;
-let records = [];
-// 初始化Gemini（免费版，无需API Key，国外直连）
+let records = JSON.parse(localStorage.getItem('workRecords')) || [];
 const { GoogleGenerativeAI } = window.googleGenerativeAI;
-const genAI = new GoogleGenerativeAI('AIzaSyDlXt39Vn2w0cQ06Qe8e98hWX75ZtX7e8k'); // 公共免费入口
+const genAI = new GoogleGenerativeAI('AIzaSyDlXt39Vn2w0cQ06Qe8e98hWX75ZtX7e8k');
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-// 初始化雷达图
+// 页面加载时初始化雷达图和排名
 window.onload = () => {
+  // 初始化雷达图
   chart = echarts.init(document.getElementById('radar'));
-  chart.setOption({
-    radar:{indicator:[
-      {name:'工作完成度',max:0.8},
-      {name:'效率与执行力',max:0.8},
-      {name:'责任心与态度',max:0.8},
-      {name:'协作与沟通',max:0.8},
-      {name:'改进与成长',max:0.8}
-    ]},
-    series:[{type:'radar',data:[{value:[0,0,0,0,0]}]}]
-  })
+  updateRadarChart([0, 0, 0, 0, 0]);
+  
+  // 渲染历史排名
+  renderRank();
+};
+
+// 更新雷达图
+function updateRadarChart(data) {
+  const option = {
+    radar: {
+      indicator: [
+        {name:'工作完成度',max:0.8},
+        {name:'效率与执行力',max:0.8},
+        {name:'责任心与态度',max:0.8},
+        {name:'协作与沟通',max:0.8},
+        {name:'改进与成长',max:0.8}
+      ]
+    },
+    series: [{
+      type: 'radar',
+      data: [{ value: data }]
+    }]
+  };
+  chart.setOption(option);
 }
 
 // AI评分核心方法
@@ -95,7 +108,6 @@ async function submitAI(){
   btn.disabled = true;
   btn.innerText = "AI评分中…";
   try {
-    // 拼接工作日志内容，传给Gemini
     const logContent = `
       姓名：${name}
       今日完成：${done}
@@ -103,7 +115,6 @@ async function submitAI(){
       问题与解决方案：${document.getElementById('problem').value || '无'}
       明日工作计划：${document.getElementById('plan').value || '无'}
     `;
-    // Gemini提示词（强制固定格式返回，避免解析错误）
     const prompt = `
       你是专业的员工绩效评分专家，按0~0.8分（单维度满分0.8，总分4.0）对以下工作日志评分，
       维度：工作完成度、效率与执行力、责任心与态度、协作与沟通、改进与成长，
@@ -111,17 +122,15 @@ async function submitAI(){
       score1(工作完成度),score2(效率与执行力),score3(责任心与态度),score4(协作与沟通),score5(改进与成长),total(总分,保留2位小数),comment(评语)
       工作日志：${logContent}
     `;
-    // 调用Gemini免费接口
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const text = response.text().replace(/```|json/g, '').trim(); // 清理格式
-    const data = JSON.parse(text); // 解析AI返回的评分
+    const text = response.text().replace(/```|json/g, '').trim();
+    const data = JSON.parse(text);
     
-    // 展示结果
     showResult(data);
   } catch (e) {
+    console.error(e);
     alert("AI评分成功（兜底机制），已为你生成合理评分");
-    // 本地兜底评分（极端情况AI接口异常时用，避免页面卡死）
     showResult({
       score1:(Math.random()*0.4+0.4).toFixed(1),
       score2:(Math.random()*0.4+0.4).toFixed(1),
@@ -137,7 +146,7 @@ async function submitAI(){
   }
 }
 
-// 展示评分结果+更新雷达图
+// 展示评分结果
 function showResult(data){
   document.getElementById('s1').innerText = data.score1;
   document.getElementById('s2').innerText = data.score2;
@@ -146,28 +155,38 @@ function showResult(data){
   document.getElementById('s5').innerText = data.score5;
   document.getElementById('total').innerText = data.total;
   document.getElementById('comment').innerText = data.comment;
-  // 更新雷达图数据
-  chart.setOption({
-    series:[{data:[{value:[data.score1,data.score2,data.score3,data.score4,data.score5]}]}]
-  });
-  // 新增排名记录
+  
+  // 更新雷达图
+  updateRadarChart([
+    parseFloat(data.score1),
+    parseFloat(data.score2),
+    parseFloat(data.score3),
+    parseFloat(data.score4),
+    parseFloat(data.score5)
+  ]);
+  
+  // 新增排名记录并保存到本地
   records.push({
-    name:document.getElementById('name').value.trim(),
-    total:data.total,
+    name: document.getElementById('name').value.trim(),
+    total: data.total,
     ...data
   });
+  localStorage.setItem('workRecords', JSON.stringify(records));
   renderRank();
 }
 
 // 渲染排名列表
 function renderRank(){
   const list = document.getElementById('rankList');
+  if(records.length === 0){
+    list.innerHTML = "暂无记录";
+    return;
+  }
   const sorted = [...records].sort((a,b)=>b.total - a.total);
-  if(sorted.length === 0){ list.innerHTML = "暂无记录"; return; }
-  list.innerHTML = sorted.map((i,k)=>`
+  list.innerHTML = sorted.map((item, index) => `
     <div class="rank-item">
-      <span>${k+1}. ${i.name}</span>
-      <span>${i.total}</span>
+      <span>${index + 1}. ${item.name}</span>
+      <span>${item.total}</span>
     </div>
   `).join('');
 }
