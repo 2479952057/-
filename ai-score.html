@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>员工工作日志 - 纯AI智能评分系统</title>
+<title>员工工作日志 - AI智能评分系统</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui}
 body{background:#f7f8fa}
@@ -25,24 +25,30 @@ textarea{min-height:100px;resize:vertical}
 .rank-item:first-child{font-weight:bold;color:#1677ff}
 .tips{color:#999;font-size:12px;margin-top:10px;text-align:center}
 .status-tip{text-align:center;margin-top:8px;font-size:13px;color:#1677ff}
+.key-input{background:#f0f7ff;border:1px solid #1677ff;margin-bottom:16px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 </head>
 <body>
 <div class="container">
   <div class="header">
-    <h1>员工工作日志 - 纯AI智能评分系统</h1>
+    <h1>员工工作日志 - AI智能评分系统</h1>
   </div>
   <div class="main">
     <div class="card">
       <h2>📝 工作日志</h2>
+      <!-- 密钥输入框，代码里不存密钥，只有你自己手动输入 -->
+      <div class="form-item">
+        <label>Gemini API密钥（仅本地使用，不上传、不保存）</label>
+        <input id="apiKey" type="password" class="key-input" placeholder="请输入你自己的Gemini API密钥">
+      </div>
       <div class="form-item"><label>姓名</label><input id="name" placeholder="请输入姓名"></div>
       <div class="form-item"><label>今日完成工作</label><textarea id="done" placeholder="请详细填写今日完成的工作内容"></textarea></div>
       <div class="form-item"><label>未完成工作</label><textarea id="undone" placeholder="请填写未完成的工作及原因"></textarea></div>
       <div class="form-item"><label>遇到的问题与解决方案</label><textarea id="problem" placeholder="请填写遇到的问题及对应的解决办法"></textarea></div>
       <div class="form-item"><label>明日工作计划</label><textarea id="plan" placeholder="请填写明日的工作安排与计划"></textarea></div>
-      <button class="btn" onclick="submitAI()" id="btn">🚀 纯AI智能评分</button>
-      <div class="tips">已接入Google Gemini大模型，仅使用AI真实评分，无本地兜底</div>
+      <button class="btn" onclick="submitAI()" id="btn">🚀 AI智能评分</button>
+      <div class="tips">接入Google Gemini官方API，纯AI真实评分，密钥仅本地使用，永不泄露</div>
       <div id="statusTip" class="status-tip"></div>
     </div>
     <div class="card">
@@ -67,11 +73,9 @@ textarea{min-height:100px;resize:vertical}
 </div>
 
 <script>
-// 全局变量
+// 全局变量，代码里彻底不写死密钥
 let chart;
 let records = JSON.parse(localStorage.getItem('workScoreRecords')) || [];
-// 稳定中转接口，仅AI真实评分
-const AI_API_URL = "https://ai-score-proxy.vercel.app/api/gemini-score";
 
 // 页面加载初始化
 window.onload = () => {
@@ -106,9 +110,10 @@ function updateRadarChart(data) {
   }, true);
 }
 
-// 核心纯AI评分逻辑（无任何兜底）
+// 核心纯AI评分逻辑（无任何兜底、无本地生成分数代码）
 async function submitAI() {
-  // 获取表单内容
+  // 获取表单内容和手动输入的密钥
+  const apiKey = document.getElementById('apiKey').value.trim();
   const name = document.getElementById('name').value.trim();
   const done = document.getElementById('done').value.trim();
   const undone = document.getElementById('undone').value.trim();
@@ -118,6 +123,10 @@ async function submitAI() {
   const statusTip = document.getElementById('statusTip');
 
   // 基础校验
+  if (!apiKey) {
+    alert('请输入你的Gemini API密钥');
+    return;
+  }
   if (!name) {
     alert('请填写姓名');
     return;
@@ -127,97 +136,33 @@ async function submitAI() {
     return;
   }
 
+  // 动态拼接官方API地址，密钥仅在本地内存中使用
+  const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+
   // 按钮禁用，防止重复提交
   btn.disabled = true;
   btn.innerText = "AI评分中…";
-  statusTip.innerText = "正在调用Gemini大模型评分…";
+  statusTip.innerText = "正在调用Gemini官方API评分…";
 
   try {
-    // 仅调用AI大模型，无任何本地逻辑
-    const response = await fetch(AI_API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, done, undone, problem, plan }),
-      timeout: 15000
-    });
-
-    // 接口调用失败，直接报错，不做任何兜底
-    if (!response.ok) {
-      throw new Error(`AI服务调用失败，状态码：${response.status}`);
-    }
-
-    // 解析AI返回数据
-    const scoreData = await response.json();
-
-    // 校验AI返回数据完整性，不完整直接报错，不渲染任何分数
-    if (!scoreData.score1 || !scoreData.score2 || !scoreData.score3 || !scoreData.score4 || !scoreData.score5 || !scoreData.total || !scoreData.comment) {
-      throw new Error("AI返回数据不完整，请重试");
-    }
-
-    // 只有AI返回完全正确的数据，才渲染结果
-    showScoreResult(scoreData);
-    statusTip.innerText = "✅ Gemini AI 真实评分完成";
-
-  } catch (error) {
-    // 所有异常情况，仅报错提示，不生成任何分数，不修改页面数据
-    alert(`AI评分失败：${error.message}`);
-    statusTip.innerText = "❌ AI评分失败，请检查网络后重试";
-  } finally {
-    // 恢复按钮状态
-    btn.disabled = false;
-    btn.innerText = "🚀 纯AI智能评分";
-  }
-}
-
-// 渲染AI评分结果（仅AI返回正确数据时才会执行）
-function showScoreResult(data) {
-  // 填充AI返回的真实分数
-  document.getElementById('s1').innerText = data.score1;
-  document.getElementById('s2').innerText = data.score2;
-  document.getElementById('s3').innerText = data.score3;
-  document.getElementById('s4').innerText = data.score4;
-  document.getElementById('s5').innerText = data.score5;
-  document.getElementById('total').innerText = data.total;
-  document.getElementById('comment').innerText = data.comment;
-
-  // 更新雷达图
-  updateRadarChart([
-    parseFloat(data.score1),
-    parseFloat(data.score2),
-    parseFloat(data.score3),
-    parseFloat(data.score4),
-    parseFloat(data.score5)
-  ]);
-
-  // 保存评分记录到本地
-  records.push({
-    name: document.getElementById('name').value.trim(),
-    total: data.total,
-    time: new Date().toLocaleString()
-  });
-  localStorage.setItem('workScoreRecords', JSON.stringify(records));
-
-  // 更新排名
-  renderRank();
-}
-
-// 渲染排名列表
-function renderRank() {
-  const rankList = document.getElementById('rankList');
-  if (records.length === 0) {
-    rankList.innerHTML = "暂无评分记录";
-    return;
-  }
-  // 按总分降序排序
-  const sortedRecords = [...records].sort((a, b) => parseFloat(b.total) - parseFloat(a.total));
-  // 渲染排名
-  rankList.innerHTML = sortedRecords.map((item, index) => `
-    <div class="rank-item">
-      <span>${index + 1}. ${item.name}</span>
-      <span>${item.total} 分</span>
-    </div>
-  `).join('');
-}
-</script>
-</body>
-</html>
+    // 给AI的精准prompt，严格要求返回固定格式JSON
+    const prompt = `
+你是专业的员工工作表现评分助手，必须严格遵守以下所有规则，只返回纯JSON格式数据，不能有任何其他内容、解释、markdown格式、多余符号、换行。
+评分规则：
+1.  从5个维度评分，每个维度分数范围0.1-0.8，保留1位小数
+    - score1：工作完成度，根据今日完成工作的完整性、落地性、工作量评分
+    - score2：效率与执行力，根据工作完成的效率、闭环情况、推进进度评分
+    - score3：责任心与态度，根据工作态度、未完成工作的正视程度、负责程度评分
+    - score4：协作与沟通，根据工作中的协同对接、问题沟通、跨方配合情况评分
+    - score5：改进与成长，根据工作复盘、问题解决、明日计划的合理性、成长性评分
+2.  total：总分，必须是5个维度分数的总和，保留2位小数，范围0.5-4.0
+3.  comment：评语，根据整体工作情况，写一段50-150字的专业、中肯的工作评语
+4.  必须严格根据用户提交的工作日志内容评分，绝对不能随机，工作内容越完整、落地性越强、态度越端正，分数越高
+用户提交的工作日志内容：
+姓名：${name}
+今日完成工作：${done}
+未完成工作：${undone}
+遇到的问题与解决方案：${problem}
+明日工作计划：${plan}
+返回格式必须严格是纯JSON，示例如下：
+{"score1":"0.6","score2":"0.6","score3":"0.6","score4":"0.6","score5":"0.6","total":"3.00","comment":"工作完成情况良好，执行力达标，态度端正，有完整的工作...
